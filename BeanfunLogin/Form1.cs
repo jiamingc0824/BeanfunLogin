@@ -26,9 +26,7 @@ namespace BeanfunLogin
 {
     enum LoginMethod : int {
         Regular = 0,
-        Keypasco = 1,
-        PlaySafe = 2,
-        QRCode = 3
+        QRCode = 1
     };
 
     public partial class main : Form
@@ -123,42 +121,16 @@ namespace BeanfunLogin
                 case "LoginNoAccount":
                     msg = "找不到遊戲帳號。";
                     break;
-                case "LoginNoResponseVakten":
-                    msg = "登入失敗，與伺服器驗證失敗，請檢查是否安裝且已執行vakten程式。";
-                    break;
                 case "LoginUnknown":
                     msg = "登入失敗，請稍後再試";
                     method = 0;
                     break;
                 case "OTPNoLongPollingKey":
-                    if (Properties.Settings.Default.loginMethod == (int)LoginMethod.PlaySafe)
-                        msg = "密碼獲取失敗，請檢查晶片卡是否插入讀卡機，且讀卡機運作正常。\n若仍出現此訊息，請嘗試重新登入。";
-                    else
-                    {
-                        msg = "已從伺服器斷線，請重新登入。";
-                        method = 1;
-                    }
-                    break;
-                case "LoginNoReaderName":
-                    msg = "登入失敗，找不到晶片卡或讀卡機，請檢查晶片卡是否插入讀卡機，且讀卡機運作正常。\n若還是發生此情形，請嘗試重新登入。";
-                    break;
-                case "LoginNoCardType":
-                    msg = "登入失敗，晶片卡讀取失敗。";
-                    break;
-                case "LoginNoCardId":
-                    msg = "登入失敗，找不到讀卡機。";
-                    break;
-                case "LoginNoOpInfo":
-                    msg = "登入失敗，讀卡機讀取失敗。";
-                    break;
-                case "LoginNoEncryptedData":
-                    msg = "登入失敗，晶片卡讀取失敗。";
+                    msg = "已從伺服器斷線，請重新登入。";
+                    method = 1;
                     break;
                 case "OTPUnknown":
                     msg = "獲取密碼失敗，請嘗試重新登入。";
-                    break;
-                case "LoginNoPSDriver":
-                    msg = "PlaySafe驅動初始化失敗，請檢查PlaySafe元件是否已正確安裝。";
                     break;
                 default:
                     break;
@@ -198,7 +170,7 @@ namespace BeanfunLogin
         {
             try
             {
-                this.Text = $"BeanfunLogin - v{ currentVersion.Major }.{ currentVersion.Minor }.{ currentVersion.Build }({ currentVersion.Revision })";
+                this.Text = $"BeanfunLogin - v{ currentVersion.Major }.{ currentVersion.Minor }.{ currentVersion.Build } ({ currentVersion.Revision })";
                 this.AcceptButton = this.loginButton;
                 this.bfClient = null;
                 this.accountManager = new AccountManager();
@@ -236,7 +208,7 @@ namespace BeanfunLogin
                     this.UseWaitCursor = true;
                     this.panel2.Enabled = false;
                     this.loginButton.Text = "請稍後...";
-                    this.loginWorker.RunWorkerAsync(Properties.Settings.Default.loginMethod);
+                    this.loginWorker.RunWorkerAsync();
                 }
                 if (gamePaths.Get("新楓之谷") == "")
                 {
@@ -250,7 +222,7 @@ namespace BeanfunLogin
                     }
                 }
 
-                this.loginMethodInput.SelectedIndex = Properties.Settings.Default.loginMethod;
+                this.loginMethodInput.SelectedIndex = safeReadLoginMethodSetting();
                 this.textBox3.Text = "";
 
                 if (this.accountInput.Text == "")
@@ -292,16 +264,16 @@ namespace BeanfunLogin
                 string res = Encoding.UTF8.GetString(wc.DownloadData("http://tw.beanfun.com/game_zone/"));
                 Regex reg = new Regex("Services.ServiceList = (.*);");
                 // Dirty hacky code copied from the url above.
-                string json = "{\"Rows\":[{\"ServiceCode\":\"611639\",\"ServiceRegion\":\"T0\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u5929\u5802\u570B\u969B\u4F3A\u670D\u5668\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/lineagenew/www/index.aspx\",\"ServiceForumPageURL\":null,\"ServiceRank\":1,\"ServiceXLargeImageName\":\"20170823104401212_xl.jpg\",\"ServiceLargeImageName\":\"20170901170635618.jpg\",\"ServiceSmallImageName\":\"20170901170635618_s.jpg\",\"ServiceDownloadURL\":\"https://tw.event.beanfun.com/Lineagenew/EventAD/EventAD.aspx?EventADID=3849\",\"IsHotGame\":false,\"IsNewGame\":true,\"ServiceStartMode\":0,\"ServiceName\":\"\u5929\u5802\u570B\u969B\u4F3A\u670D\u5668\"},{\"ServiceCode\":\"600035\",\"ServiceRegion\":\"T7\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u5929\u5802\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/lineage\",\"ServiceForumPageURL\":null,\"ServiceRank\":1,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20120928124510872.jpg\",\"ServiceSmallImageName\":\"20120928124510872_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/Lineage/download.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u5929\u5802\"},{\"ServiceCode\":\"600037\",\"ServiceRegion\":\"T7\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u5929\u5802\u3002\u5065\u5EB7\u4F3A\u670D\u5668\",\"ServiceWebsiteURL\":\"http://tw.beanfun.com/lineage\",\"ServiceForumPageURL\":null,\"ServiceRank\":3,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20120928124542747.jpg\",\"ServiceSmallImageName\":\"20120928124542747_s.jpg\",\"ServiceDownloadURL\":\"http://tw.dl.lineage.beanfun.com/Lineage/TW_Lineage_8.1C7m19d.EXE\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u5929\u5802\u3002\u5065\u5EB7\u4F3A\u670D\u5668\"},{\"ServiceCode\":\"600041\",\"ServiceRegion\":\"BE\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u5929\u5802\u514D\u8CBB\u4F3A\u670D\u5668\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/LineageFree\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"20140206185307780_xl.jpg\",\"ServiceLargeImageName\":\"20140206185307780.jpg\",\"ServiceSmallImageName\":\"20140206185307780_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/Lineage/download.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u5929\u5802\u3002\u514D\u8CBB\u4F3A\u670D\u5668\"},{\"ServiceCode\":\"610074\",\"ServiceRegion\":\"T9\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u65B0\u6953\u4E4B\u8C37 MapleStory\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/maplestory\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"20140714122314126_xl.jpg\",\"ServiceLargeImageName\":\"20170110120804222.jpg\",\"ServiceSmallImageName\":\"20130531183006245_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/maplestory/index.aspx?url=dw_game.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u65B0\u6953\u4E4B\u8C37 Maplestory\"},{\"ServiceCode\":\"610153\",\"ServiceRegion\":\"TN\",\"ServiceSubtypeName\":\"\u5C04\u64CA\",\"ServiceFamilyName\":\"\u7D55\u5C0D\u6B66\u529B online\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/cso\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20120928124729716.jpg\",\"ServiceSmallImageName\":\"20120928124729716_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/cso/download_01.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u7D55\u5C0D\u6B66\u529B online\"},{\"ServiceCode\":\"300148\",\"ServiceRegion\":\"AF\",\"ServiceSubtypeName\":\"\u52D5\u4F5C\",\"ServiceFamilyName\":\"\u827E\u723E\u4E4B\u5149\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/elsword\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20120928125322403.jpg\",\"ServiceSmallImageName\":\"20120928125322403_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/ELSWORD/index.aspx?url=downloads/game.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u827E\u723E\u4E4B\u5149\"},{\"ServiceCode\":\"600309\",\"ServiceRegion\":\"A2\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u65B0\u746A\u5947mabinogi\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/mabinogi\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"20130820175530929_xl.jpg\",\"ServiceLargeImageName\":\"20130820175530929.jpg\",\"ServiceSmallImageName\":\"20130820175530929_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/mabinogi/index.aspx?url=4_download.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u65B0\u746A\u5947mabinogi\"},{\"ServiceCode\":\"610096\",\"ServiceRegion\":\"TE\",\"ServiceSubtypeName\":\"\u904B\u52D5\",\"ServiceFamilyName\":\"\u8DD1\u8DD1\u5361\u4E01\u8ECA\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/KartRider\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20180528182935985.jpg\",\"ServiceSmallImageName\":\"20130306130219799_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/kartrider/download01.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u8DD1\u8DD1\u5361\u4E01\u8ECA\"},{\"ServiceCode\":\"610085\",\"ServiceRegion\":\"TC\",\"ServiceSubtypeName\":\"\u4F11\u9592\",\"ServiceFamilyName\":\"\u7206\u7206\u738B\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/bnb\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"20130306130235034.jpg\",\"ServiceSmallImageName\":\"20130306130235034_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/bnb/download.htm\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u7206\u7206\u738B\"},{\"ServiceCode\":\"610502\",\"ServiceRegion\":\"DN\",\"ServiceSubtypeName\":\"\u4F11\u9592\",\"ServiceFamilyName\":\"\u6CE1\u6CE1\u5927\u4E82\u9B25\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/bubblefighter\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"20130109175916093_xl.jpg\",\"ServiceLargeImageName\":\"20161219151936982.jpg\",\"ServiceSmallImageName\":\"20121127105241745_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/bubblefighter/GameDownload/DownLoad.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u6CE1\u6CE1\u5927\u4E82\u9B25\"},{\"ServiceCode\":\"610075\",\"ServiceRegion\":\"T9\",\"ServiceSubtypeName\":\"\u89D2\u8272\u626E\u6F14\",\"ServiceFamilyName\":\"\u65B0\u6953\u4E4B\u8C37\u9AD4\u9A57\u4F3A\u670D\u5668\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/maplestory/tserver.aspx\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"20140116141723301_xl.jpg\",\"ServiceLargeImageName\":\"20140116141723301.jpg\",\"ServiceSmallImageName\":\"20130531183019432_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/maplestory/index.aspx?url=dw_game.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"\u6953\u4E4B\u8C37\u9AD4\u9A57\u4F3A\u670D\u5668\"}]}";
+                string json = "[{\"ServiceCode\":\"611639\",\"ServiceRegion\":\"T0\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"天堂國際伺服器\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/lineagenew\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"https://images.beanfun.com/GameZone/20190807113741791_xl.jpg\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20190807113741791.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20190807183837199_s.jpg\",\"ServiceDownloadURL\":\"https://tw.hicdn.beanfun.com/beanfun/GamaWWW/lineagenew/remastered/download/index.html\",\"IsHotGame\":false,\"IsNewGame\":true,\"ServiceStartMode\":0,\"ServiceName\":\"天堂國際伺服器\"},{\"ServiceCode\":\"611653\",\"ServiceRegion\":\"VA\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"新龍之谷\",\"ServiceWebsiteURL\":\"https://dragonnest.beanfun.com/\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"https://images.beanfun.com/GameZone/20191007120943878_xl.jpg\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20191007120943878.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20191007120943878_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/DragonNest/beginner.aspx\",\"IsHotGame\":true,\"IsNewGame\":true,\"ServiceStartMode\":0,\"ServiceName\":\"新龍之谷\"},{\"ServiceCode\":\"600035\",\"ServiceRegion\":\"T7\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"天堂\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/lineage\",\"ServiceForumPageURL\":null,\"ServiceRank\":1,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20120928124510872.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20120928124510872_s.jpg\",\"ServiceDownloadURL\":\"https://tw-event.beanfun.com/lineage/Download/Index.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"天堂\"},{\"ServiceCode\":\"600037\",\"ServiceRegion\":\"T7\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"天堂。健康伺服器\",\"ServiceWebsiteURL\":\"http://tw.beanfun.com/lineage\",\"ServiceForumPageURL\":null,\"ServiceRank\":3,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20120928124542747.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20120928124542747_s.jpg\",\"ServiceDownloadURL\":\"http://tw.dl.lineage.beanfun.com/Lineage/TW_Lineage_8.1C7m19d.EXE\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"天堂。健康伺服器\"},{\"ServiceCode\":\"600041\",\"ServiceRegion\":\"BE\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"天堂免費伺服器\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/LineageFree\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"https://images.beanfun.com/GameZone/20140206185307780_xl.jpg\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20140206185307780.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20140206185307780_s.jpg\",\"ServiceDownloadURL\":\"https://tw-event.beanfun.com/lineage/Download/Index.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"天堂。免費伺服器\"},{\"ServiceCode\":\"610074\",\"ServiceRegion\":\"T9\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"新楓之谷 MapleStory\",\"ServiceWebsiteURL\":\"https://maplestory.beanfun.com/\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"https://images.beanfun.com/GameZone/20140714122314126_xl.jpg\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20170110120804222.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20130531183006245_s.jpg\",\"ServiceDownloadURL\":\"https://maplestory.beanfun.com/download\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"新楓之谷 Maplestory\"},{\"ServiceCode\":\"610153\",\"ServiceRegion\":\"TN\",\"ServiceSubtypeName\":\"射擊\",\"ServiceFamilyName\":\"絕對武力 online\",\"ServiceWebsiteURL\":\"https://cso.beanfun.com\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20120928124729716.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20120928124729716_s.jpg\",\"ServiceDownloadURL\":\"https://cso.beanfun.com/download.html\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"絕對武力 online\"},{\"ServiceCode\":\"300148\",\"ServiceRegion\":\"AF\",\"ServiceSubtypeName\":\"動作\",\"ServiceFamilyName\":\"艾爾之光\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/elsword\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/1704295474174.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20120928125322403_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/ELSWORD/index.aspx?url=downloads/game.aspx\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"艾爾之光\"},{\"ServiceCode\":\"600309\",\"ServiceRegion\":\"A2\",\"ServiceSubtypeName\":\"角色扮演\",\"ServiceFamilyName\":\"新瑪奇mabinogi\",\"ServiceWebsiteURL\":\"https://mabinogi.beanfun.com/Main\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"https://images.beanfun.com/GameZone/20130820175530929_xl.jpg\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20130820175530929.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20130820175530929_s.jpg\",\"ServiceDownloadURL\":\"https://mabinogi.beanfun.com/Download?page=program\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"新瑪奇mabinogi\"},{\"ServiceCode\":\"610085\",\"ServiceRegion\":\"TC\",\"ServiceSubtypeName\":\"休閒\",\"ServiceFamilyName\":\"爆爆王\",\"ServiceWebsiteURL\":\"https://tw.beanfun.com/bnb\",\"ServiceForumPageURL\":null,\"ServiceRank\":0,\"ServiceXLargeImageName\":\"\",\"ServiceLargeImageName\":\"https://images.beanfun.com/GameZone/20130306130235034.jpg\",\"ServiceSmallImageName\":\"https://images.beanfun.com/GameZone/20130306130235034_s.jpg\",\"ServiceDownloadURL\":\"https://tw.beanfun.com/bnb/download.htm\",\"IsHotGame\":false,\"IsNewGame\":false,\"ServiceStartMode\":0,\"ServiceName\":\"爆爆王\"}]";
                 if (reg.IsMatch(res))
                 {
                     json = reg.Match(res).Groups[1].Value;
                 }
 
-                JObject o = JObject.Parse(json);
-                foreach (var game in o["Rows"])
+                JArray a = JArray.Parse(json);
+                foreach (JObject game in a)
                 {
-                    Debug.Write(game["serviceCode"]);
+                    Debug.Write(game["ServiceCode"]);
                     this.comboBox2.Items.Add((string)game["ServiceFamilyName"]);
                     gameList.Add(new GameService((string)game["ServiceFamilyName"], (string)game["ServiceCode"], (string)game["ServiceRegion"]));
                 }
@@ -393,7 +365,7 @@ namespace BeanfunLogin
                 timedActivity = new CSharpAnalytics.Activities.AutoTimedEventActivity("Login", Properties.Settings.Default.loginMethod.ToString());
                 AutoMeasurement.Client.TrackEvent("Login" + Properties.Settings.Default.loginMethod.ToString(), "Login");
             }
-            this.loginWorker.RunWorkerAsync(Properties.Settings.Default.loginMethod);
+            this.loginWorker.RunWorkerAsync();
         }    
 
         // The get OTP button.
@@ -585,11 +557,7 @@ namespace BeanfunLogin
 
             Properties.Settings.Default.loginMethod = this.loginMethodInput.SelectedIndex;
 
-            if (Properties.Settings.Default.loginMethod == (int)LoginMethod.PlaySafe)
-            {
-                this.passLabel.Text = "PIN碼";
-            }
-            else if (Properties.Settings.Default.loginMethod == (int)LoginMethod.QRCode)
+            if (Properties.Settings.Default.loginMethod == (int)LoginMethod.QRCode)
             {
                 accountInput.Visible = false;
                 accountLabel.Visible = false;
@@ -650,9 +618,34 @@ namespace BeanfunLogin
             }
         }
 
+        /// <summary>
+        /// After we removed PlaySafe and keypasco, the index of QRCode has beed shrinked to 1.
+        /// </summary>
+        /// <returns></returns>
+        private int safeReadLoginMethodSetting()
+        {
+            int v = Properties.Settings.Default.loginMethod;
+            switch (v)
+            {
+                case 3: // QRCode
+                    // fix setting.
+                    Properties.Settings.Default.loginMethod = 1;
+                    return 1;
+                case 1: // PlaySafe or New QRCode.
+                    return 1;
+                case 2: // KeyPasco
+                    // fix setting.
+                    Properties.Settings.Default.loginMethod = 0;
+                    return 0;
+            }
+
+            return 0;
+        }
+
         private void import_Click(object sender, EventArgs e)
         {
-            bool res = accountManager.addAccount(accountInput.Text, passwdInput.Text, loginMethodInput.SelectedIndex);
+            // Only Regular login is working, QRCode doesn't need to keep account or password.
+            bool res = accountManager.addAccount(accountInput.Text, passwdInput.Text, (int)LoginMethod.Regular);
             if (res == false)
                 errexit("帳號記錄新增失敗",0);
             refreshAccountList();
@@ -663,6 +656,11 @@ namespace BeanfunLogin
             }
         }
 
+        /// <summary>
+        ///  Read account from account manager and fill in to account/password input box.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void export_Click(object sender, EventArgs e)
         {
             if(accounts.SelectedIndex != -1)
@@ -678,7 +676,8 @@ namespace BeanfunLogin
 
                 accountInput.Text = account;
                 passwdInput.Text = passwd;
-                loginMethodInput.SelectedIndex = method;
+                // Only Regular login is working, QRCode doesn't need to keep account or password.
+                loginMethodInput.SelectedIndex = (int)LoginMethod.Regular;
 
                 if (Properties.Settings.Default.GAEnabled)
                 {
@@ -730,6 +729,11 @@ namespace BeanfunLogin
             BackToLogin();
         }
 
+        /// <summary>
+        /// Set GamePath from File Dialog
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
